@@ -11,7 +11,13 @@ export default defineConfig({
 
   plugins: [
     react(),
-    nodePolyfills(),
+    nodePolyfills({
+      globals: {
+        Buffer: true,
+        global: true,
+        process: true,
+      },
+    }),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['vite.svg', 'icon-512.png'],
