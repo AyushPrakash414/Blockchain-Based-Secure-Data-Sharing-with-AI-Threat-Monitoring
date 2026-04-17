@@ -1,0 +1,49 @@
+# ── Node (client & smart_contract) ────────────────────────────────────────────
+node_modules/
+dist/
+dist-ssr/
+.cache/
+*.local
+
+# npm / yarn / pnpm logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ── Python (backend) ───────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+env/
+venv/
+*.egg-info/
+
+# Backend runtime logs
+backend/logs/
+backend/*.log
+
+# ── Hardhat / Solidity ─────────────────────────────────────────────────────────
+smart_contract/artifacts/
+smart_contract/cache/
+smart_contract/coverage/
+smart_contract/coverage.json
+smart_contract/typechain/
+smart_contract/typechain-types/
+
+# ── Environment & secrets ──────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── OS & editor junk ───────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

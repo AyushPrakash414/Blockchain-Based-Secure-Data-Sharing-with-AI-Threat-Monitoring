@@ -1,3 +1,9 @@
 .venv/
 __pycache__/
 *.pyc
+
+# Runtime logs (generated at runtime, not source code)
+logs/
+*.log
+uvicorn.err.log
+uvicorn.out.log
