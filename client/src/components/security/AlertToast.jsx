@@ -1,49 +1,48 @@
 import React, { useEffect, useState } from 'react';
 import { fetchAlerts } from '../../utils/monitorApi';
+import { ShieldAlert, X } from 'lucide-react';
 
 const AlertToast = () => {
-    const [toast, setToast] = useState(null);
+  const [toast, setToast] = useState(null);
 
-    useEffect(() => {
-        const checkNewAlerts = async () => {
-            const data = await fetchAlerts();
-            if (Array.isArray(data) && data.length > 0) {
-                // Get the most recent one (assuming last element or order logic)
-                const latest = data[data.length - 1]; 
-                const lastSeenTs = localStorage.getItem('lastSeenAlertTs');
-                
-                // Use alert time or stringified object to check if new
-                const currentUniq = latest.time || JSON.stringify(latest);
-                
-                if (lastSeenTs !== currentUniq) {
-                    setToast(latest);
-                    localStorage.setItem('lastSeenAlertTs', currentUniq);
-                    // auto hide toast
-                    setTimeout(() => setToast(null), 8000);
-                }
-            }
-        };
+  useEffect(() => {
+    const checkNewAlerts = async () => {
+      const data = await fetchAlerts();
+      if (Array.isArray(data) && data.length > 0) {
+        const latest = data[0];
+        const lastSeenTs = localStorage.getItem('lastSeenAlertTs');
+        const currentUniq = latest.created_at || JSON.stringify(latest);
+        if (lastSeenTs !== currentUniq) {
+          setToast(latest);
+          localStorage.setItem('lastSeenAlertTs', currentUniq);
+          setTimeout(() => setToast(null), 8000);
+        }
+      }
+    };
 
-        const intervalId = setInterval(checkNewAlerts, 6000);
-        return () => clearInterval(intervalId);
-    }, []);
+    const intervalId = setInterval(checkNewAlerts, 6000);
+    return () => clearInterval(intervalId);
+  }, []);
 
-    if (!toast) return null;
+  if (!toast) return null;
 
-    return (
-        <div className="fixed bottom-4 right-4 max-w-sm bg-[#93000a] border border-[#ffb4ab] rounded-lg shadow-[0_0_20px_rgba(255,180,171,0.2)] p-4 z-[9999] animate-bounce">
-            <div className="flex justify-between items-start">
-                <h4 className="text-[#ffdad6] font-bold text-sm">NEW SECURITY THREAT</h4>
-                <button onClick={() => setToast(null)} className="text-[#ffb4ab] hover:text-white">&times;</button>
-            </div>
-            <p className="text-xs text-[#ffb4ab] mt-2">{toast.reason}</p>
-            {toast.recommended_action && (
-                <button className="mt-3 w-full bg-[#690005] hover:bg-[#410003] text-[#ffdad6] text-xs py-2 px-3 rounded transition-colors">
-                    {toast.recommended_action}
-                </button>
-            )}
+  return (
+    <div className="fixed bottom-20 lg:bottom-6 right-4 max-w-sm glass border-l-4 p-4 z-[9999] animate-fade-in" style={{ borderLeftColor: 'var(--color-danger)' }}>
+      <div className="flex justify-between items-start gap-3">
+        <div className="flex items-center gap-2">
+          <ShieldAlert className="w-5 h-5 text-danger flex-shrink-0" />
+          <h4 className="text-primary font-semibold text-sm">Security Alert</h4>
         </div>
-    );
+        <button onClick={() => setToast(null)} className="text-muted hover:text-primary">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+      <p className="text-xs text-secondary mt-2">{toast.message || toast.reason}</p>
+      {toast.recommended_action && (
+        <p className="text-xs text-accent mt-2 font-medium">{toast.recommended_action}</p>
+      )}
+    </div>
+  );
 };
 
 export default AlertToast;

@@ -3,38 +3,31 @@ import ReactDOM from 'react-dom/client'
 import { Buffer } from 'buffer'
 window.Buffer = Buffer
 window.global = window
-import App from './App.jsx'
 import './index.css'
 import { RouterProvider, createBrowserRouter } from 'react-router-dom'
-import Files from './components/Files.jsx'
-import Share from './components/Share.jsx'
-import Layout from './components/Layout.jsx'
-import Alerts from './components/Alerts.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
+
+import AppShell from './components/AppShell.jsx'
+import OverviewPage from './pages/OverviewPage.jsx'
+import UploadPage from './pages/UploadPage.jsx'
+import VaultPage from './pages/VaultPage.jsx'
+import SharePage from './pages/SharePage.jsx'
+import ThreatPage from './pages/ThreatPage.jsx'
+import AuditPage from './pages/AuditPage.jsx'
 
 const router = createBrowserRouter([
   {
-    path: "/",
-    element: <Layout />,
+    path: '/',
+    element: <AppShell />,
     children: [
-      {
-        path: '',
-        element: <App />
-      },
-      {
-        path: '/files',
-        element: <Files />
-      },
-      {
-        path: '/share',
-        element: <Share />
-      },
-      {
-        path: '/alerts',
-        element: <Alerts />
-      },
+      { index: true, element: <OverviewPage /> },
+      { path: 'upload', element: <UploadPage /> },
+      { path: 'vault', element: <VaultPage /> },
+      { path: 'share', element: <SharePage /> },
+      { path: 'threats', element: <ThreatPage /> },
+      { path: 'audit', element: <AuditPage /> },
     ],
-  }
+  },
 ])
 
 ReactDOM.createRoot(document.getElementById('root')).render(

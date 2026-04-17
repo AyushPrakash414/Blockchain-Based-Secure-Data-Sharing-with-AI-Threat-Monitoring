@@ -67,9 +67,9 @@ const Navigation = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0 gap-2 sm:gap-3">
-                
+
                 {/* Theme Toggle — polished pill button */}
                 <button
                   type="button"
