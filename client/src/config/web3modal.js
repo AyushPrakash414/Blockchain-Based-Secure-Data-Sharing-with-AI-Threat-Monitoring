@@ -1,6 +1,6 @@
 import { createWeb3Modal, defaultConfig } from '@web3modal/ethers5/react';
 
-const projectId = 'd572964914cb01516b3de3cffcf465fb';
+const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || '8641a06561322f0a6cd6743632e2f6e7';
 
 const sepolia = {
   chainId: 11155111,
@@ -17,14 +17,18 @@ const metadata = {
   icons: ['/icon-512.png'],
 };
 
-createWeb3Modal({
-  ethersConfig: defaultConfig({ metadata }),
-  chains: [sepolia],
-  projectId,
-  enableAnalytics: false,
-  themeMode: 'dark',
-  themeVariables: {
-    '--w3m-accent': '#34d399',
-    '--w3m-border-radius-master': '2px',
-  },
-});
+try {
+  createWeb3Modal({
+    ethersConfig: defaultConfig({ metadata }),
+    chains: [sepolia],
+    projectId,
+    enableAnalytics: false,
+    themeMode: 'dark',
+    themeVariables: {
+      '--w3m-accent': '#34d399',
+      '--w3m-border-radius-master': '2px',
+    },
+  });
+} catch (error) {
+  console.error("Wallet init failed:", error);
+}
