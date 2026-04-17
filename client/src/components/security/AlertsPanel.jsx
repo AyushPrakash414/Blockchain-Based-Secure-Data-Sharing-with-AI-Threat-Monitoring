@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchAlerts } from '../../utils/monitorApi';
+import { fetchAlerts, subscribeToAlerts } from '../../utils/monitorApi';
 
 const AlertsPanel = () => {
     const [alerts, setAlerts] = useState([]);
@@ -18,10 +18,17 @@ const AlertsPanel = () => {
         
         setLoading(true);
         loadAlerts();
-        const intervalId = setInterval(loadAlerts, 10000);
+        
+        // Supabase Real-time Subscription
+        const subscription = subscribeToAlerts((newAlert) => {
+            if (isMounted) {
+                setAlerts(prev => [newAlert, ...prev].slice(0, 20));
+            }
+        });
+        
         return () => {
             isMounted = false;
-            clearInterval(intervalId);
+            if (subscription) subscription.unsubscribe();
         }
     }, []);
 

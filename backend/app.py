@@ -1,30 +1,34 @@
-from __future__ import annotations
-
-import json
+import os
 from collections import defaultdict
 from datetime import datetime, timezone
-from pathlib import Path
-from threading import Lock
 from typing import Any
+import math
 
+import httpx
 import numpy as np
-from fastapi import FastAPI, Query
+from dotenv import load_dotenv
+from fastapi import FastAPI, Query, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from sklearn.ensemble import IsolationForest
+from supabase import create_client, Client
 
-BASE_DIR = Path(__file__).resolve().parent
-LOGS_DIR = BASE_DIR / "logs"
-EVENTS_PATH = LOGS_DIR / "events.jsonl"
-ALERTS_PATH = LOGS_DIR / "alerts.json"
-WRITE_LOCK = Lock()
+load_dotenv()
 
-UPLOAD_ACTIONS = {"FILE_STORED_ONCHAIN_SUCCESS"}
-FAIL_ACTIONS = {"FILE_UPLOAD_FAILED"}
-VIEW_ACTIONS = {"FILE_VIEW_CLICKED"}
-DISPLAY_ACTIONS = {"FILES_DISPLAY_REQUESTED"}
-GRANT_ACTIONS = {"ACCESS_GRANTED"}
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL")
 
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+app = FastAPI(title="Blockchain Drive AI Security", version="2.0.0")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5050", "http://localhost:5173", "*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
+)
 
 class LogEvent(BaseModel):
     ts: str | None = None
@@ -34,235 +38,233 @@ class LogEvent(BaseModel):
     resource: str | None = None
     meta: dict[str, Any] = Field(default_factory=dict)
 
-
-app = FastAPI(title="Blockchain Drive Logging API", version="1.0.0")
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5050"],
-    allow_credentials=False,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type"],
-)
-
-
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
-
-def ensure_logs_dir() -> None:
-    LOGS_DIR.mkdir(parents=True, exist_ok=True)
-
-
-def normalize_event(event: LogEvent) -> dict[str, Any]:
-    payload = event.model_dump()
-    if not payload.get("ts"):
-        payload["ts"] = utc_now_iso()
-    payload["meta"] = payload.get("meta") or {}
-    return payload
-
-
-def read_json_lines(path: Path) -> list[dict[str, Any]]:
-    if not path.exists():
-        return []
-
-    rows: list[dict[str, Any]] = []
-    with path.open("r", encoding="utf-8") as handle:
-        for line in handle:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                rows.append(json.loads(line))
-            except json.JSONDecodeError:
-                continue
-    return rows
-
-
-def read_alerts_file() -> list[dict[str, Any]]:
-    if not ALERTS_PATH.exists():
-        return []
-
+def trigger_webhook_alert(wallet: str, score: float, reason: str):
+    if not DISCORD_WEBHOOK_URL:
+        return
+        
+    embed = {
+        "title": "🚨 Critical Security Threat Detected",
+        "color": 16711680,
+        "fields": [
+            {"name": "Wallet Address", "value": f"`{wallet}`"},
+            {"name": "Threat Score", "value": f"**{score}/100**"},
+            {"name": "Trigger Reason", "value": reason}
+        ]
+    }
     try:
-        data = json.loads(ALERTS_PATH.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return []
+        httpx.post(DISCORD_WEBHOOK_URL, json={"embeds": [embed]}, timeout=5.0)
+    except Exception as e:
+        print(f"Webhook failed: {e}")
 
-    return data if isinstance(data, list) else []
+def extract_features(logs: list[dict]) -> dict[str, dict]:
+    # Group by wallet
+    wallets = defaultdict(list)
+    for log in logs:
+        wallet = log.get("wallet_address")
+        if wallet:
+            wallets[wallet].append(log)
 
-
-def write_alerts_file(alerts: list[dict[str, Any]]) -> None:
-    ensure_logs_dir()
-    with WRITE_LOCK:
-        ALERTS_PATH.write_text(json.dumps(alerts, indent=2), encoding="utf-8")
-
-
-def extract_wallet_features(events: list[dict[str, Any]]) -> dict[str, dict[str, int]]:
-    features: dict[str, dict[str, int]] = defaultdict(
-        lambda: {
-            "uploads": 0,
-            "fails": 0,
-            "views": 0,
-            "displays": 0,
-            "grants": 0,
-        }
-    )
-
-    for event in events:
-        wallet = event.get("wallet")
-        if not wallet:
+    features = {}
+    for wallet, user_logs in wallets.items():
+        if not user_logs:
             continue
+            
+        uploads = 0
+        failed_attempts = 0
+        file_views = 0
+        unique_files = set()
+        
+        # Calculate time span for actions_per_minute
+        timestamps = []
 
-        action = event.get("action")
-        wallet_features = features[wallet]
+        for lg in user_logs:
+            action = lg.get("action", "")
+            result = lg.get("result", "")
+            meta = lg.get("metadata", {})
+            
+            if action in ["FILE_STORED_ONCHAIN_SUCCESS", "FILE_UPLOADED_TO_IPFS"]:
+                uploads += 1
+            if result == "error" or action == "FILE_UPLOAD_FAILED":
+                failed_attempts += 1
+            if action == "FILE_VIEW_CLICKED":
+                file_views += 1
+                
+            # track unique files if applicable
+            url = meta.get("fileUrl") or meta.get("cid") or meta.get("gatewayUrl")
+            if url:
+                unique_files.add(url)
+                
+            ts_str = lg.get("timestamp")
+            if ts_str:
+                try:
+                    # simplistic parse
+                    ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+                    timestamps.append(ts.timestamp())
+                except:
+                    pass
 
-        if action in UPLOAD_ACTIONS:
-            wallet_features["uploads"] += 1
-        if action in FAIL_ACTIONS:
-            wallet_features["fails"] += 1
-        if action in VIEW_ACTIONS:
-            wallet_features["views"] += 1
-        if action in DISPLAY_ACTIONS:
-            wallet_features["displays"] += 1
-        if action in GRANT_ACTIONS:
-            wallet_features["grants"] += 1
+        total_actions = len(user_logs)
+        
+        actions_per_minute = 0
+        if len(timestamps) > 1:
+            span_seconds = max(timestamps) - min(timestamps)
+            if span_seconds > 0:
+                actions_per_minute = (total_actions / span_seconds) * 60.0
+            else:
+                actions_per_minute = total_actions
+        else:
+            actions_per_minute = total_actions
 
-    return dict(features)
-
-
-def build_threshold_alerts(features: dict[str, dict[str, int]]) -> dict[str, dict[str, Any]]:
-    alerts: dict[str, dict[str, Any]] = {}
-
-    for wallet, counts in features.items():
-        reasons: list[str] = []
-
-        if counts["fails"] >= 3:
-            reasons.append("High upload failures")
-        if counts["views"] >= 8:
-            reasons.append("High file views")
-        if counts["displays"] >= 6:
-            reasons.append("High display requests")
-
-        if not reasons:
-            continue
-
-        score = min(
-            0.99,
-            0.4 + (counts["fails"] * 0.15) + (counts["views"] * 0.04) + (counts["displays"] * 0.03),
-        )
-
-        alerts[wallet] = {
-            "ts": utc_now_iso(),
-            "wallet": wallet,
-            "score": round(score, 2),
-            "reason": ", ".join(reasons),
-            "recommended_action": "Review or revoke",
+        features[wallet] = {
+            "actions_per_minute": float(actions_per_minute),
+            "total_actions": total_actions,
+            "file_views": file_views,
+            "uploads": uploads,
+            "failed_attempts": failed_attempts,
+            "unique_files_accessed": len(unique_files)
         }
+        
+    return features
 
-    return alerts
+def run_ai_pipeline():
+    print("Running AI Pipeline...")
+    # 1. Fetch recent logs from Supabase (e.g. last 1000 to keep it relevant)
+    response = supabase.table("access_logs").select("*").order("timestamp", desc=True).limit(1000).execute()
+    logs = response.data
+    
+    if not logs:
+        return
+        
+    # 2. Convert to features
+    features_dict = extract_features(logs)
+    wallets = list(features_dict.keys())
+    
+    if len(wallets) < 2:
+        return # Not enough data for isolation forest
+        
+    # Build matrix
+    matrix = []
+    for w in wallets:
+        f = features_dict[w]
+        matrix.append([
+            f["actions_per_minute"],
+            f["total_actions"],
+            f["file_views"],
+            f["uploads"],
+            f["failed_attempts"],
+            f["unique_files_accessed"],
+        ])
+        
+    X = np.array(matrix, dtype=float)
+    
+    # 3. Handle identical rows bug in IsolationForest
+    # Adding tiny noise so standard deviation isn't 0
+    noise = np.random.normal(0, 0.0001, X.shape)
+    X_noisy = X + noise
 
-
-def apply_isolation_forest(
-    features: dict[str, dict[str, int]], alerts: dict[str, dict[str, Any]]
-) -> dict[str, dict[str, Any]]:
-    wallets = list(features.keys())
-    if len(wallets) < 3:
-        return alerts
-
-    matrix = np.array(
-        [
-            [
-                counts["uploads"],
-                counts["fails"],
-                counts["views"],
-                counts["displays"],
-                counts["grants"],
-            ]
-            for counts in features.values()
-        ],
-        dtype=float,
-    )
-
-    if not np.any(matrix):
-        return alerts
-
+    # 4. Run Isolation Forest
     try:
         model = IsolationForest(contamination="auto", random_state=42)
-        predictions = model.fit_predict(matrix)
-        raw_scores = -model.score_samples(matrix)
-    except Exception:
-        return alerts
+        model.fit(X_noisy)
+        # Higher score_samples means MORE normal. Negative means outlier.
+        raw_scores = -model.score_samples(X_noisy)
+    except Exception as e:
+        print(f"ML Error: {e}")
+        return
 
-    min_score = float(raw_scores.min())
-    max_score = float(raw_scores.max())
-    denominator = (max_score - min_score) or 1.0
+    # Normalize score 0 to 1
+    min_s = float(raw_scores.min())
+    max_s = float(raw_scores.max())
+    denominator = (max_s - min_s) or 1.0
 
-    for index, wallet in enumerate(wallets):
-        if predictions[index] != -1:
-            continue
+    # We only care about anomalies
+    predictions = model.predict(X_noisy)
 
-        normalized_score = 0.5 + ((float(raw_scores[index]) - min_score) / denominator) * 0.49
-        existing = alerts.get(wallet)
+    for idx, wallet in enumerate(wallets):
+        # IsolationForest returns -1 for outliers
+        if predictions[idx] != -1:
+            # Let's also check hard thresholds as fallback
+            f = features_dict[wallet]
+            if f["failed_attempts"] > 5 or f["actions_per_minute"] > 30:
+                is_anomaly = True
+                score = 0.8
+                reason = "Hard threshold exceeded (Spam or Failures)"
+            else:
+                continue
+        else:
+            is_anomaly = True
+            norm_score = (float(raw_scores[idx]) - min_s) / denominator
+            # Scale it to 0-1 heavily weighted to higher end for outliers
+            score = 0.5 + (max(0, norm_score) * 0.5)
+            reason = "Isolation Forest AI Anomaly"
 
-        if existing:
-            existing["score"] = round(max(existing["score"], normalized_score), 2)
-            if "IsolationForest outlier" not in existing["reason"]:
-                existing["reason"] = f"{existing['reason']}, IsolationForest outlier"
-            continue
-
-        alerts[wallet] = {
-            "ts": utc_now_iso(),
-            "wallet": wallet,
-            "score": round(normalized_score, 2),
-            "reason": "IsolationForest outlier",
-            "recommended_action": "Review or revoke",
-        }
-
-    return alerts
+        # Overwrite if hard threshold triggers and ML flagged it too
+        if is_anomaly:
+            risk_score_100 = round(score * 100, 2)
+            
+            # Check if we already alerted recently (in last 1 hour) for this wallet
+            recent = supabase.table("alerts").select("id").eq("wallet_address", wallet).gte("risk_score", 50.0).order("created_at", desc=True).limit(1).execute()
+            
+            if not recent.data:
+                severity = "critical" if risk_score_100 > 80 else "high"
+                
+                new_alert = {
+                    "wallet_address": wallet,
+                    "risk_score": risk_score_100,
+                    "severity": severity,
+                    "message": reason,
+                    "recommended_action": "Review activity or Revoke Access",
+                }
+                
+                # Insert to Supabase directly
+                supabase.table("alerts").insert(new_alert).execute()
+                
+                # Send Webhook
+                trigger_webhook_alert(wallet, risk_score_100, reason)
 
 
 @app.post("/log")
-def log_event(event: LogEvent) -> dict[str, Any]:
-    payload = normalize_event(event)
-    ensure_logs_dir()
-
-    with WRITE_LOCK:
-        with EVENTS_PATH.open("a", encoding="utf-8") as handle:
-            handle.write(json.dumps(payload) + "\n")
-
-    return {"status": "ok", "event": payload}
-
+def log_event(event: LogEvent, background_tasks: BackgroundTasks):
+    payload = {
+        "wallet_address": event.wallet,
+        "action": event.action,
+        "result": event.result,
+        "timestamp": event.ts or utc_now_iso(),
+        "metadata": event.meta
+    }
+    
+    # 1. Dual write capability (if frontend didn't write to SB itself)
+    # The frontend is already inserting directly, so this isn't strictly necessary.
+    # But it acts as a reliable fallback.
+    try:
+        supabase.table("access_logs").insert(payload).execute()
+    except Exception as e:
+        print(f"Failed to log to SB: {e}")
+        
+    # 2. Trigger AI Pipeline in background
+    background_tasks.add_task(run_ai_pipeline)
+    
+    return {"status": "ok"}
 
 @app.get("/logs")
-def get_logs(
-    wallet: str | None = None,
-    limit: int = Query(default=100, ge=1, le=1000),
-) -> list[dict[str, Any]]:
-    events = read_json_lines(EVENTS_PATH)
-
+def get_logs(wallet: str | None = None, limit: int = 100):
+    query = supabase.table("access_logs").select("*").order("timestamp", desc=True).limit(limit)
     if wallet:
-        wallet_lower = wallet.lower()
-        events = [event for event in events if str(event.get("wallet", "")).lower() == wallet_lower]
-
-    return events[-limit:]
-
+        query = query.ilike("wallet_address", wallet)
+    resp = query.execute()
+    return resp.data
 
 @app.get("/alerts")
-def get_alerts() -> list[dict[str, Any]]:
-    return read_alerts_file()
-
+def get_alerts():
+    resp = supabase.table("alerts").select("*").order("created_at", desc=True).limit(50).execute()
+    return resp.data
 
 @app.post("/analyze")
-def analyze_logs(
-    limit: int = Query(default=500, ge=1, le=5000),
-) -> list[dict[str, Any]]:
-    events = read_json_lines(EVENTS_PATH)
-    if limit:
-        events = events[-limit:]
+def analyze_logs():
+    run_ai_pipeline()
+    resp = supabase.table("alerts").select("*").order("created_at", desc=True).limit(10).execute()
+    return resp.data
 
-    features = extract_wallet_features(events)
-    alerts = build_threshold_alerts(features)
-    alerts = apply_isolation_forest(features, alerts)
-
-    ordered_alerts = sorted(alerts.values(), key=lambda alert: alert["score"], reverse=True)
-    write_alerts_file(ordered_alerts)
-    return ordered_alerts

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchLogs } from '../../utils/monitorApi';
+import { fetchLogs, subscribeToLogs } from '../../utils/monitorApi';
 
 const ActivityFeed = ({ account }) => {
     const [events, setEvents] = useState([]);
@@ -8,6 +8,7 @@ const ActivityFeed = ({ account }) => {
 
     useEffect(() => {
         let isMounted = true;
+        
         const loadLogs = async () => {
             if (!account) {
                 setLoading(false);
@@ -29,11 +30,16 @@ const ActivityFeed = ({ account }) => {
         setLoading(true);
         loadLogs();
         
-        // Optional: poll logs every 10 seconds
-        const intervalId = setInterval(loadLogs, 10000);
+        // Supabase Real-time Subscription (Replaces polling)
+        const subscription = subscribeToLogs(account, (newLog) => {
+            if (isMounted) {
+                setEvents(prev => [newLog, ...prev].slice(0, 50));
+            }
+        });
+
         return () => {
             isMounted = false;
-            clearInterval(intervalId);
+            if (subscription) subscription.unsubscribe();
         }
     }, [account]);
 
