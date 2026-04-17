@@ -15,9 +15,9 @@ from supabase import create_client, Client
 
 load_dotenv()
 
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
-DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL")
+SUPABASE_URL = "https://raptxtpxfrmdognxbbdg.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJhcHR4dHB4ZnJtZG9nbnhiYmRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MDc3MDYsImV4cCI6MjA5MTk4MzcwNn0.j_dbq-RxNwMESGJbG-upS2wBA0ZbyBXA3R-sTbQsr4I"
+DISCORD_WEBHOOK_URL = ""
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
@@ -267,4 +267,46 @@ def analyze_logs():
     run_ai_pipeline()
     resp = supabase.table("alerts").select("*").order("created_at", desc=True).limit(10).execute()
     return resp.data
+
+
+import asyncio
+
+async def generate_synthetic_threats():
+    import random
+    wallets = ["0xBadActor", "0xScraperBot", "0xMaliciousNode"]
+    # Spam 20 rapid views across different wallets to trigger the ML Model Isolation forest
+    for _ in range(20):
+        w = random.choice(wallets)
+        payload = {
+            "wallet_address": w,
+            "action": "FILE_VIEW_CLICKED",
+            "result": "info",
+            "timestamp": utc_now_iso(),
+            "metadata": {"ip": f"192.168.1.{random.randint(1,100)}"}
+        }
+        supabase.table("access_logs").insert(payload).execute()
+        await asyncio.sleep(0.05)
+    
+    # Run the pipeline to catch this
+    run_ai_pipeline()
+    await asyncio.sleep(2)
+    
+    # Spam 15 Critical Errors (Hard threshold trigger)
+    for _ in range(15):
+        payload = {
+            "wallet_address": "0xBruteForceHacker",
+            "action": "ACCESS_DENIED",
+            "result": "error",
+            "timestamp": utc_now_iso(),
+            "metadata": {}
+        }
+        supabase.table("access_logs").insert(payload).execute()
+        await asyncio.sleep(0.02)
+        
+    run_ai_pipeline()
+
+@app.post("/trigger-demo")
+async def trigger_demo(background_tasks: BackgroundTasks):
+    background_tasks.add_task(generate_synthetic_threats)
+    return {"status": "Demo attack simulation started in background. Monitor dashboard for spikes."}
 

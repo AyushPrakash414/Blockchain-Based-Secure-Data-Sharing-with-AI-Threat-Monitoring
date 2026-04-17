@@ -7,7 +7,7 @@ function getInitialTheme() {
   if (typeof window === 'undefined') return 'dark';
   const saved = window.localStorage.getItem(THEME_STORAGE_KEY);
   if (saved === 'light' || saved === 'dark') return saved;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  return 'dark';
 }
 
 export function ThemeProvider({ children }) {

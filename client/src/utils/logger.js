@@ -1,6 +1,5 @@
 import supabase from "./supabaseClient";
-
-const LOG_ENDPOINT = "http://localhost:8000/log";
+import { LOG_URL } from "./apiConfig";
 
 export async function logEvent(event = {}) {
   const payload = {
@@ -16,7 +15,7 @@ export async function logEvent(event = {}) {
     return;
   }
 
-  // 1. Send to Supabase
+  // 1. Send to Supabase (primary — works everywhere)
   try {
     const { error } = await supabase.from("access_logs").insert([
       {
@@ -32,13 +31,11 @@ export async function logEvent(event = {}) {
     console.error("Supabase insert failed:", err);
   }
 
-  // 2. Keep the local Python backend endpoint for compatibility or background processing
+  // 2. Send to local Python backend (best-effort, won't block)
   try {
-    void fetch(LOG_ENDPOINT, {
+    void fetch(LOG_URL, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     }).catch(() => {});
   } catch {
