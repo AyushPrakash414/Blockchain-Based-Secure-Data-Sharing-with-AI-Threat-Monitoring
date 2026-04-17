@@ -83,7 +83,7 @@ export default function VaultPage() {
                 setFiles([]);
                 setError('');
               }}
-              className={`inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-medium transition-theme ${tab === item.key ? 'bg-accent text-white shadow-sm' : 'border border-base-strong bg-surface text-base-strong hover:bg-surface-inset'}`}
+              className={`inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium transition-theme ${tab === item.key ? 'btn-tab-active' : 'btn-secondary'}`}
             >
               <item.icon className="h-4 w-4" />
               {item.label}
@@ -102,7 +102,7 @@ export default function VaultPage() {
                 className="w-full bg-transparent text-sm font-mono outline-none placeholder:text-base-soft placeholder:font-sans"
               />
             </label>
-            <button type="button" onClick={loadFiles} className="inline-flex items-center justify-center gap-2 rounded-md bg-accent px-6 py-3 text-sm font-medium text-white transition-theme hover:opacity-90 shadow-sm">
+            <button type="button" onClick={loadFiles} className="btn-primary px-6 py-3 text-sm font-medium transition-theme">
               <Search className="h-4 w-4" />
               Load shared files
             </button>

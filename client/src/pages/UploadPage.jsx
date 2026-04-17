@@ -244,7 +244,7 @@ export default function UploadPage() {
                   <div>
                     <p className="font-semibold font-serif text-base-strong">Confirm in MetaMask</p>
                     <p className="mt-1 text-sm leading-relaxed text-base-muted font-sans">The transaction is waiting for wallet approval on a mobile device.</p>
-                    <button type="button" onClick={openWalletForSigning} className="mt-4 inline-flex items-center gap-2 rounded-md border border-base-strong bg-white px-4 py-2 text-sm font-medium text-base-strong transition-theme hover:bg-surface-inset">
+                    <button type="button" onClick={openWalletForSigning} className="btn-secondary mt-4 px-4 py-2 text-sm font-medium transition-theme">
                       Open MetaMask <ExternalLink className="h-4 w-4" />
                     </button>
                   </div>
@@ -272,12 +272,12 @@ export default function UploadPage() {
                     </div>
                     {error ? null : (
                       <div className="flex gap-3 pt-4">
-                        <button type="button" onClick={(e) => { e.stopPropagation(); upload(); }} disabled={uploading} className="inline-flex items-center gap-2 rounded-md bg-terracotta px-6 py-2.5 text-sm font-bold text-white transition-all hover:opacity-90 shadow-sm">
+                        <button type="button" onClick={(e) => { e.stopPropagation(); upload(); }} disabled={uploading} className="btn-primary px-6 py-2.5 text-sm font-bold transition-theme disabled:cursor-not-allowed disabled:opacity-50">
                           {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
                           {uploading ? 'Processing...' : 'Upload File'}
                         </button>
                         {!uploading && (
-                          <button type="button" onClick={(e) => { e.stopPropagation(); setFile(null); }} className="inline-flex items-center gap-2 rounded-md border border-base-strong bg-surface px-4 py-2.5 text-sm font-medium transition-all hover:bg-surface-inset text-base-strong">
+                          <button type="button" onClick={(e) => { e.stopPropagation(); setFile(null); }} className="btn-secondary px-4 py-2.5 text-sm font-medium transition-theme">
                             <X className="h-4 w-4" /> Remove
                           </button>
                         )}
@@ -340,10 +340,10 @@ export default function UploadPage() {
                     ))}
                   </div>
                   <div className="mt-6 flex flex-wrap justify-end gap-3">
-                    <button type="button" onClick={reset} className="rounded-md border border-terracotta bg-white px-5 py-2.5 text-sm font-bold transition-theme hover:bg-surface-inset text-terracotta shadow-sm">
+                    <button type="button" onClick={reset} className="btn-secondary border-terracotta px-5 py-2.5 text-sm font-bold text-terracotta transition-theme">
                       Upload another file
                     </button>
-                    <button type="button" onClick={() => navigate('/app/files')} className="rounded-md bg-terracotta px-5 py-2.5 text-sm font-bold transition-theme hover:opacity-90 text-white shadow-sm">
+                    <button type="button" onClick={() => navigate('/app/files')} className="btn-primary px-5 py-2.5 text-sm font-bold transition-theme">
                       View in My Files
                     </button>
                   </div>
@@ -372,7 +372,7 @@ export default function UploadPage() {
                       type="button"
                       onClick={shareAccess}
                       disabled={!shareAddress || sharing || !account}
-                      className="inline-flex items-center justify-center w-[130px] rounded-md bg-terracotta px-4 py-2.5 text-sm font-bold text-white transition-theme hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 shadow-sm"
+                      className="btn-primary w-[130px] px-4 py-2.5 text-sm font-bold transition-theme disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {sharing ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Grant Access'}
                     </button>

@@ -40,7 +40,7 @@ export default function LandingPage() {
           <button type="button" onClick={() => open()} className="text-sm font-bold text-base-strong transition-colors hover:text-terracotta">
             Connect Wallet
           </button>
-          <button type="button" onClick={handleEnter} className="rounded-md bg-terracotta px-6 py-2.5 text-sm font-bold text-white transition-all hover:opacity-90 shadow-sm">
+          <button type="button" onClick={handleEnter} className="btn-primary px-6 py-2.5 text-sm font-bold transition-theme">
             Get Started
           </button>
         </div>
@@ -79,10 +79,10 @@ export default function LandingPage() {
           </motion.div>
 
           <motion.div variants={fade} className="flex flex-wrap items-center justify-center gap-4 pt-4">
-            <button type="button" onClick={() => navigate('/app')} className="inline-flex h-12 items-center gap-2 rounded-md bg-terracotta px-8 text-sm font-bold text-white transition-all hover:opacity-90 shadow-sm">
+            <button type="button" onClick={() => navigate('/app')} className="btn-primary h-12 px-8 text-sm font-bold transition-theme">
               Open Dashboard <ArrowRight className="h-4 w-4" />
             </button>
-            <button type="button" onClick={() => open()} className="inline-flex h-12 items-center gap-2 rounded-md border border-base-strong bg-surface px-8 text-sm font-bold text-base-strong transition-all hover:bg-surface-inset hover:scale-[0.98]">
+            <button type="button" onClick={() => open()} className="btn-secondary h-12 px-8 text-sm font-bold transition-theme hover:scale-[0.98]">
               <Lock className="h-4 w-4 text-base-soft" /> Connect Wallet
             </button>
           </motion.div>

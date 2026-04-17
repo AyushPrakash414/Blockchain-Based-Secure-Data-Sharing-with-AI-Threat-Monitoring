@@ -1,5 +1,7 @@
 import { createWeb3Modal, defaultConfig } from '@web3modal/ethers5/react';
 
+let walletInitialized = false;
+
 const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || '8641a06561322f0a6cd6743632e2f6e7';
 
 const sepolia = {
@@ -18,6 +20,10 @@ const metadata = {
 };
 
 export function initWallet() {
+  if (walletInitialized || typeof window === 'undefined') {
+    return;
+  }
+
   try {
     createWeb3Modal({
       ethersConfig: defaultConfig({ metadata }),
@@ -30,6 +36,7 @@ export function initWallet() {
         '--w3m-border-radius-master': '2px',
       },
     });
+    walletInitialized = true;
   } catch (error) {
     console.error("Wallet init failed:", error);
   }

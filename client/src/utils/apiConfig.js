@@ -1,8 +1,10 @@
-// ! IMPORTANT: Replace this placeholder with your deployed Render URL once you deploy the backend.
-// Example: const BACKEND_HOST = "https://datafort-backend.onrender.com";
-const BACKEND_HOST = window.location.hostname === 'localhost'
-  ? 'http://localhost:8000'
-  : 'https://blockchain-based-secure-data-sharing.onrender.com';
+const configuredApiBase = import.meta.env.VITE_API_BASE_URL?.trim();
+
+const BACKEND_HOST = configuredApiBase
+  ? configuredApiBase.replace(/\/+$/, '')
+  : window.location.hostname === 'localhost'
+    ? 'http://localhost:8000'
+    : 'https://blockchain-based-secure-data-sharing.onrender.com';
 
 export const API_BASE = BACKEND_HOST;
 export const ANALYZE_URL = `${BACKEND_HOST}/analyze`;

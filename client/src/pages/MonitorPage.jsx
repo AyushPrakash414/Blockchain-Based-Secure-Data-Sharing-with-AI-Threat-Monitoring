@@ -99,7 +99,7 @@ export default function MonitorPage() {
             {simulating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             {simulating ? 'Injecting...' : 'Run Simulation'}
           </button>
-          <button type="button" onClick={runAnalysis} disabled={running} className="inline-flex items-center gap-2 rounded-md bg-terracotta px-6 py-2.5 text-sm font-bold text-white shadow-sm transition-theme hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
+          <button type="button" onClick={runAnalysis} disabled={running} className="btn-primary px-6 py-2.5 text-sm font-bold transition-theme disabled:cursor-not-allowed disabled:opacity-50">
             {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
             {running ? 'Analyzing...' : 'Run Analysis'}
           </button>

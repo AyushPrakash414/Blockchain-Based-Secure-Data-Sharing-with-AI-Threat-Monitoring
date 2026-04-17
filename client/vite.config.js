@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
-import { nodePolyfills } from 'vite-plugin-node-polyfills'
 
 export default defineConfig({
   server: {
@@ -11,13 +10,6 @@ export default defineConfig({
 
   plugins: [
     react(),
-    nodePolyfills({
-      globals: {
-        Buffer: true,
-        global: true,
-        process: true,
-      },
-    }),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['vite.svg', 'icon-512.png'],
@@ -92,9 +84,5 @@ export default defineConfig({
         },
       },
     },
-  },
-
-  define: {
-    global: 'globalThis',
   },
 })

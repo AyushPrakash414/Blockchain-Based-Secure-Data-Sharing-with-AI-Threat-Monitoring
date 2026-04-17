@@ -52,7 +52,7 @@ export default function Topbar({ account, role, setRole, isConnected }) {
               <StatusBadge tone="info">Sepolia</StatusBadge>
             </>
           ) : (
-            <button type="button" onClick={() => open()} className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition-theme hover:opacity-90">
+            <button type="button" onClick={() => open()} className="btn-primary rounded-full px-4 py-2 text-sm font-semibold transition-theme">
               Connect wallet
             </button>
           )}
