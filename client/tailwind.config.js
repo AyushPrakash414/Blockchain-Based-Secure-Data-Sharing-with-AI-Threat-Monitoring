@@ -36,10 +36,10 @@ export default {
         info: '#8E9B84'
       },
       textColor: {
-        'base-strong': 'var(--text)',
-        'base-muted': 'var(--text-muted)',
-        'base-soft': 'var(--text-soft)',
-        'base-faint': 'var(--text-faint)'
+        'base-strong': '#1C1C18',
+        'base-muted': 'rgba(28, 28, 24, 0.8)',
+        'base-soft': 'rgba(28, 28, 24, 0.6)',
+        'base-faint': 'rgba(28, 28, 24, 0.4)'
       }
     },
   },
