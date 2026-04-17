@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* ── Light Mode (default) ── */
+  :root {
+    --color-bg-primary: #f8fafc;
+    --color-bg-secondary: #ffffff;
+    --color-bg-tertiary: #f1f5f9;
+    --color-bg-elevated: #ffffff;
+    --color-bg-inset: #e2e8f0;
+
+    --color-text-primary: #0f172a;
+    --color-text-secondary: #334155;
+    --color-text-muted: #64748b;
+    --color-text-faint: #94a3b8;
+
+    --color-border: #e2e8f0;
+    --color-border-subtle: #f1f5f9;
+
+    --color-accent: #16a34a;
+    --color-accent-soft: #dcfce7;
+    --color-accent-text: #15803d;
+
+    --color-danger: #dc2626;
+    --color-danger-soft: #fef2f2;
+
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+    --shadow-elevated: 0 4px 12px rgba(0, 0, 0, 0.08);
+
+    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* ── Dark Mode ── */
+  .dark {
+    --color-bg-primary: #0a0a0a;
+    --color-bg-secondary: #131313;
+    --color-bg-tertiary: #1c1b1b;
+    --color-bg-elevated: #1c1b1b;
+    --color-bg-inset: #0a0a0a;
+
+    --color-text-primary: #e5e2e1;
+    --color-text-secondary: #c2c6d9;
+    --color-text-muted: #8c90a2;
+    --color-text-faint: #5a5d6e;
+
+    --color-border: #424656;
+    --color-border-subtle: rgba(66, 70, 86, 0.3);
+
+    --color-accent: #88d982;
+    --color-accent-soft: rgba(47, 126, 51, 0.2);
+    --color-accent-text: #88d982;
+
+    --color-danger: #ffb4ab;
+    --color-danger-soft: rgba(147, 0, 10, 0.3);
+
+    --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.4);
+    --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.5);
+  }
+
+  html {
+    min-height: 100%;
+  }
+
+  body {
+    min-height: 100vh;
+    margin: 0;
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+}
+
+/* ── Semantic utility classes ── */
+@layer utilities {
+  .theme-bg { background-color: var(--color-bg-primary); }
+  .theme-bg-card { background-color: var(--color-bg-secondary); }
+  .theme-bg-surface { background-color: var(--color-bg-tertiary); }
+  .theme-bg-elevated { background-color: var(--color-bg-elevated); }
+  .theme-bg-inset { background-color: var(--color-bg-inset); }
+
+  .theme-text { color: var(--color-text-primary); }
+  .theme-text-secondary { color: var(--color-text-secondary); }
+  .theme-text-muted { color: var(--color-text-muted); }
+  .theme-text-faint { color: var(--color-text-faint); }
+
+  .theme-border { border-color: var(--color-border); }
+  .theme-border-subtle { border-color: var(--color-border-subtle); }
+
+  .theme-accent { color: var(--color-accent); }
+  .theme-accent-bg { background-color: var(--color-accent); }
+  .theme-accent-soft { background-color: var(--color-accent-soft); }
+
+  .theme-shadow { box-shadow: var(--shadow-card); }
+  .theme-shadow-elevated { box-shadow: var(--shadow-elevated); }
+
+  /* Dark-mode-only glow for accent elements */
+  .dark .accent-glow {
+    box-shadow: 0 0 15px rgba(136, 217, 130, 0.3);
+  }
+  .accent-glow {
+    box-shadow: 0 0 10px rgba(22, 163, 74, 0.15);
+  }
+}
