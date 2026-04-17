@@ -2,7 +2,7 @@
 // Example: const BACKEND_HOST = "https://datafort-backend.onrender.com";
 const BACKEND_HOST = window.location.hostname === 'localhost'
   ? 'http://localhost:8000'
-  : 'https://APP-BACKEND-URL.onrender.com';
+  : 'https://blockchain-based-secure-data-sharing.onrender.com';
 
 export const API_BASE = BACKEND_HOST;
 export const ANALYZE_URL = `${BACKEND_HOST}/analyze`;
