@@ -1,6 +1,5 @@
-import { Suspense, lazy, useEffect } from 'react';
+import { Suspense, lazy } from 'react';
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
-import { initWallet } from './config/web3modal';
 
 const AppFrame = lazy(() => import('./layouts/AppFrame.jsx'));
 const LandingPage = lazy(() => import('./pages/LandingPage.jsx'));
@@ -33,10 +32,6 @@ const router = createBrowserRouter([
 ]);
 
 export default function App() {
-  useEffect(() => {
-    initWallet();
-  }, []);
-
   return (
     <Suspense fallback={<PageFallback />}>
       <RouterProvider router={router} />

@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom';
-import { useWeb3Modal, useWeb3ModalAccount } from '@web3modal/ethers5/react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Lock, Shield } from 'lucide-react';
 
+import { useWallet } from '../context/WalletContext.jsx';
 import { productFeatures, workflowSteps } from '../data/product.js';
 import { GlassCard } from '../ui/Primitives.jsx';
 
@@ -13,14 +13,15 @@ const fade = {
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const { open } = useWeb3Modal();
-  const { isConnected } = useWeb3ModalAccount();
+  const { connectWallet, hasWallet, isConnected, isConnecting } = useWallet();
 
   const handleEnter = () => {
     if (isConnected) {
       navigate('/app');
     } else {
-      open();
+      connectWallet().catch(error => {
+        console.error('Wallet connection failed', error);
+      });
     }
   };
 
@@ -37,8 +38,8 @@ export default function LandingPage() {
         </div>
 
         <div className="flex items-center gap-5">
-          <button type="button" onClick={() => open()} className="text-sm font-bold text-base-strong transition-colors hover:text-terracotta">
-            Connect Wallet
+          <button type="button" onClick={() => connectWallet().catch(error => console.error('Wallet connection failed', error))} className="text-sm font-bold text-base-strong transition-colors hover:text-terracotta disabled:opacity-50" disabled={isConnecting || !hasWallet}>
+            {hasWallet ? (isConnecting ? 'Connecting...' : 'Connect Wallet') : 'Install MetaMask'}
           </button>
           <button type="button" onClick={handleEnter} className="btn-primary px-6 py-2.5 text-sm font-bold transition-theme">
             Get Started
@@ -82,8 +83,8 @@ export default function LandingPage() {
             <button type="button" onClick={() => navigate('/app')} className="btn-primary h-12 px-8 text-sm font-bold transition-theme">
               Open Dashboard <ArrowRight className="h-4 w-4" />
             </button>
-            <button type="button" onClick={() => open()} className="btn-secondary h-12 px-8 text-sm font-bold transition-theme hover:scale-[0.98]">
-              <Lock className="h-4 w-4 text-base-soft" /> Connect Wallet
+            <button type="button" onClick={() => connectWallet().catch(error => console.error('Wallet connection failed', error))} className="btn-secondary h-12 px-8 text-sm font-bold transition-theme hover:scale-[0.98] disabled:opacity-50" disabled={isConnecting || !hasWallet}>
+              <Lock className="h-4 w-4 text-base-soft" /> {hasWallet ? (isConnecting ? 'Connecting...' : 'Connect Wallet') : 'Install MetaMask'}
             </button>
           </motion.div>
         </motion.section>

@@ -1,10 +1,10 @@
-import '@web3modal/polyfills'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 
 import './index.css'
 
 import { ThemeProvider } from './context/ThemeContext.jsx'
+import { WalletProvider } from './context/WalletContext.jsx'
 import App from './App.jsx'
 
 if ('serviceWorker' in navigator) {
@@ -20,7 +20,9 @@ if ('serviceWorker' in navigator) {
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ThemeProvider>
-      <App />
+      <WalletProvider>
+        <App />
+      </WalletProvider>
     </ThemeProvider>
   </React.StrictMode>,
 )

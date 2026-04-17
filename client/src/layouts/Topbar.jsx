@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { Moon, Sun, Copy, Wallet, Shield, ChevronDown } from 'lucide-react';
-import { useWeb3Modal } from '@web3modal/ethers5/react';
 
+import { useWallet } from '../context/WalletContext.jsx';
 import { roleOptions } from '../data/product.js';
 import { shortAddress } from '../lib/format.js';
 import { StatusBadge } from '../ui/Primitives.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 
 export default function Topbar({ account, role, setRole, isConnected }) {
-  const { open } = useWeb3Modal();
   const { isDark, toggleTheme } = useTheme();
+  const { connectWallet, isConnecting, hasWallet } = useWallet();
   const [copied, setCopied] = useState(false);
 
   const copyAddress = async () => {
@@ -52,8 +52,8 @@ export default function Topbar({ account, role, setRole, isConnected }) {
               <StatusBadge tone="info">Sepolia</StatusBadge>
             </>
           ) : (
-            <button type="button" onClick={() => open()} className="btn-primary rounded-full px-4 py-2 text-sm font-semibold transition-theme">
-              Connect wallet
+            <button type="button" onClick={() => connectWallet().catch(error => console.error('Wallet connection failed', error))} className="btn-primary rounded-full px-4 py-2 text-sm font-semibold transition-theme" disabled={isConnecting || !hasWallet}>
+              {isConnecting ? 'Connecting...' : hasWallet ? 'Connect wallet' : 'Install MetaMask'}
             </button>
           )}
         </div>
