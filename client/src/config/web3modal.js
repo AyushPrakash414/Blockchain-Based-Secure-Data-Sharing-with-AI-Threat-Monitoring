@@ -17,18 +17,20 @@ const metadata = {
   icons: ['/icon-512.png'],
 };
 
-try {
-  createWeb3Modal({
-    ethersConfig: defaultConfig({ metadata }),
-    chains: [sepolia],
-    projectId,
-    enableAnalytics: false,
-    themeMode: 'dark',
-    themeVariables: {
-      '--w3m-accent': '#34d399',
-      '--w3m-border-radius-master': '2px',
-    },
-  });
-} catch (error) {
-  console.error("Wallet init failed:", error);
+export function initWallet() {
+  try {
+    createWeb3Modal({
+      ethersConfig: defaultConfig({ metadata }),
+      chains: [sepolia],
+      projectId,
+      enableAnalytics: false,
+      themeMode: 'dark',
+      themeVariables: {
+        '--w3m-accent': '#34d399',
+        '--w3m-border-radius-master': '2px',
+      },
+    });
+  } catch (error) {
+    console.error("Wallet init failed:", error);
+  }
 }

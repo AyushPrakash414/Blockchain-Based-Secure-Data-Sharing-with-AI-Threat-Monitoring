@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ethers } from 'ethers';
 import { Outlet } from 'react-router-dom';
-// import { useWeb3ModalAccount, useWeb3ModalProvider } from '@web3modal/ethers5/react';
-const useWeb3ModalAccount = () => ({ address: undefined, isConnected: false });
-const useWeb3ModalProvider = () => ({ walletProvider: null });
+import { useWeb3ModalAccount, useWeb3ModalProvider } from '@web3modal/ethers5/react';
 
 import Sidebar from './Sidebar.jsx';
 import Topbar from './Topbar.jsx';
@@ -36,6 +34,8 @@ export default function AppFrame() {
 
     const setup = async () => {
       try {
+        if (typeof window === "undefined" || !walletProvider) return;
+        
         const web3Provider = new ethers.providers.Web3Provider(walletProvider);
         const signer = web3Provider.getSigner();
         const nextAccount = await signer.getAddress();

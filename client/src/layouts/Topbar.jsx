@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Moon, Sun, Copy, Wallet, Shield, ChevronDown } from 'lucide-react';
-// import { useWeb3Modal } from '@web3modal/ethers5/react';
-const useWeb3Modal = () => ({ open: () => {} });
+import { useWeb3Modal } from '@web3modal/ethers5/react';
 
 import { roleOptions } from '../data/product.js';
 import { shortAddress } from '../lib/format.js';
