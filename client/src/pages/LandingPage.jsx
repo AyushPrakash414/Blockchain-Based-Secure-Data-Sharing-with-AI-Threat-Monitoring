@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import { useWeb3Modal, useWeb3ModalAccount } from '@web3modal/ethers5/react';
+// import { useWeb3Modal, useWeb3ModalAccount } from '@web3modal/ethers5/react';
+const useWeb3Modal = () => ({ open: () => {} });
+const useWeb3ModalAccount = () => ({ isConnected: false });
 import { motion } from 'framer-motion';
 import { ArrowRight, Lock, Shield } from 'lucide-react';
 

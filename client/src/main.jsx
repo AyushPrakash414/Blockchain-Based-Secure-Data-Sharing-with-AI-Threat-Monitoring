@@ -5,7 +5,7 @@ window.Buffer = Buffer
 window.global = window
 
 import './index.css'
-import './config/web3modal' // Initialize Web3Modal (must be before components)
+// import './config/web3modal' // TEMPORARILY DISABLED
 
 import { ThemeProvider } from './context/ThemeContext.jsx'
 import App from './App.jsx'

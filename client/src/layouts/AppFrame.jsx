@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ethers } from 'ethers';
 import { Outlet } from 'react-router-dom';
-import { useWeb3ModalAccount, useWeb3ModalProvider } from '@web3modal/ethers5/react';
+// import { useWeb3ModalAccount, useWeb3ModalProvider } from '@web3modal/ethers5/react';
+const useWeb3ModalAccount = () => ({ address: undefined, isConnected: false });
+const useWeb3ModalProvider = () => ({ walletProvider: null });
 
 import Sidebar from './Sidebar.jsx';
 import Topbar from './Topbar.jsx';
