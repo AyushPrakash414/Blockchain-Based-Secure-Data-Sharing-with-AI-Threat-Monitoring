@@ -13,27 +13,27 @@ export default {
         serif: ['"Newsreader"', 'serif'],
       },
       colors: {
-        cream: 'var(--bg)',
-        creamdark: 'var(--bg-surface)',
-        terracotta: 'var(--accent)',
-        sage: 'var(--accent-2)',
-        charcoal: 'var(--text)',
-        inkborder: 'var(--border)',
+        cream: '#FCF9F3',
+        creamdark: '#F6F3ED',
+        terracotta: '#C05C39',
+        sage: '#8E9B84',
+        charcoal: '#1C1C18',
+        inkborder: 'rgba(220, 193, 184, 0.25)',
         
-        surface: 'var(--bg-surface)',
-        'surface-strong': 'var(--bg-surface-strong)',
-        'surface-inset': 'var(--bg-inset)',
+        surface: '#F6F3ED',
+        'surface-strong': '#F0EDE5',
+        'surface-inset': '#F6F3ED',
         
-        base: 'var(--border)',
-        'base-strong': 'var(--border-strong)',
+        base: 'rgba(220, 193, 184, 0.25)',
+        'base-strong': 'rgba(220, 193, 184, 0.4)',
         
-        accent: 'var(--accent)',
-        'accent-strong': 'var(--bg-accent-strong)',
+        accent: '#C05C39',
+        'accent-strong': 'rgba(192, 92, 57, 0.15)',
         
-        success: 'var(--success)',
-        warning: 'var(--warning)',
-        danger: 'var(--danger)',
-        info: 'var(--info)'
+        success: '#8E9B84',
+        warning: '#C05C39',
+        danger: '#A34025',
+        info: '#8E9B84'
       },
       textColor: {
         'base-strong': 'var(--text)',
