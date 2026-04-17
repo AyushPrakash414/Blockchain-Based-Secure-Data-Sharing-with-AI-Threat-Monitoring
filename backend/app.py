@@ -13,6 +13,8 @@ from pydantic import BaseModel, Field
 from sklearn.ensemble import IsolationForest
 from supabase import create_client, Client
 
+from anomaly_ensemble import run_ensemble_on_feature_dict
+
 load_dotenv()
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
@@ -130,100 +132,77 @@ def extract_features(logs: list[dict]) -> dict[str, dict]:
     return features
 
 def run_ai_pipeline():
-    print("Running AI Pipeline...")
+    print("Running AI Pipeline (Ensemble)...")
     # 1. Fetch recent logs from Supabase (e.g. last 1000 to keep it relevant)
     response = supabase.table("access_logs").select("*").order("timestamp", desc=True).limit(1000).execute()
     logs = response.data
-    
+
     if not logs:
         return
-        
+
     # 2. Convert to features
     features_dict = extract_features(logs)
-    wallets = list(features_dict.keys())
-    
-    if len(wallets) < 2:
-        return # Not enough data for isolation forest
-        
-    # Build matrix
-    matrix = []
-    for w in wallets:
-        f = features_dict[w]
-        matrix.append([
-            f["actions_per_minute"],
-            f["total_actions"],
-            f["file_views"],
-            f["uploads"],
-            f["failed_attempts"],
-            f["unique_files_accessed"],
-        ])
-        
-    X = np.array(matrix, dtype=float)
-    
-    # 3. Handle identical rows bug in IsolationForest
-    # Adding tiny noise so standard deviation isn't 0
-    noise = np.random.normal(0, 0.0001, X.shape)
-    X_noisy = X + noise
 
-    # 4. Run Isolation Forest
+    if len(features_dict) < 2:
+        return  # Not enough wallets for ensemble training
+
+    # 3. Run the three-model ensemble
     try:
-        model = IsolationForest(contamination="auto", random_state=42)
-        model.fit(X_noisy)
-        # Higher score_samples means MORE normal. Negative means outlier.
-        raw_scores = -model.score_samples(X_noisy)
+        results = run_ensemble_on_feature_dict(features_dict)
     except Exception as e:
-        print(f"ML Error: {e}")
+        print(f"Ensemble ML Error: {e}")
         return
 
-    # Normalize score 0 to 1
-    min_s = float(raw_scores.min())
-    max_s = float(raw_scores.max())
-    denominator = (max_s - min_s) or 1.0
+    if not results:
+        return
 
-    # We only care about anomalies
-    predictions = model.predict(X_noisy)
+    # 4. Also apply hard-threshold fallback for very obvious abuse
+    for wallet, info in results.items():
+        f = features_dict[wallet]
+        hard_trigger = f["failed_attempts"] > 5 or f["actions_per_minute"] > 30
+        if hard_trigger and not info["is_anomaly"]:
+            info["is_anomaly"] = True
+            info["risk_score"] = max(info["risk_score"], 80.0)
+            info["hard_threshold"] = True
 
-    for idx, wallet in enumerate(wallets):
-        # IsolationForest returns -1 for outliers
-        if predictions[idx] != -1:
-            # Let's also check hard thresholds as fallback
-            f = features_dict[wallet]
-            if f["failed_attempts"] > 5 or f["actions_per_minute"] > 30:
-                is_anomaly = True
-                score = 0.8
-                reason = "Hard threshold exceeded (Spam or Failures)"
-            else:
-                continue
-        else:
-            is_anomaly = True
-            norm_score = (float(raw_scores[idx]) - min_s) / denominator
-            # Scale it to 0-1 heavily weighted to higher end for outliers
-            score = 0.5 + (max(0, norm_score) * 0.5)
-            reason = "Isolation Forest AI Anomaly"
+    # 5. Persist alerts for flagged wallets
+    for wallet, info in results.items():
+        if not info["is_anomaly"]:
+            continue
 
-        # Overwrite if hard threshold triggers and ML flagged it too
-        if is_anomaly:
-            risk_score_100 = round(score * 100, 2)
-            
-            # Check if we already alerted recently (in last 1 hour) for this wallet
-            recent = supabase.table("alerts").select("id").eq("wallet_address", wallet).gte("risk_score", 50.0).order("created_at", desc=True).limit(1).execute()
-            
-            if not recent.data:
-                severity = "critical" if risk_score_100 > 80 else "high"
-                
-                new_alert = {
-                    "wallet_address": wallet,
-                    "risk_score": risk_score_100,
-                    "severity": severity,
-                    "message": reason,
-                    "recommended_action": "Review activity or Revoke Access",
-                }
-                
-                # Insert to Supabase directly
-                supabase.table("alerts").insert(new_alert).execute()
-                
-                # Send Webhook
-                trigger_webhook_alert(wallet, risk_score_100, reason)
+        risk_score_100 = round(info["risk_score"], 2)
+
+        # Deduplicate: skip if a recent alert already exists
+        recent = (
+            supabase.table("alerts")
+            .select("id")
+            .eq("wallet_address", wallet)
+            .gte("risk_score", 50.0)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+
+        if not recent.data:
+            models_agreed = info["models_agreed"]
+            severity = "critical" if risk_score_100 > 80 else "high"
+            reason = (
+                f"Ensemble Anomaly – {models_agreed}/3 models agreed | "
+                f"votes {info['model_votes']}"
+            )
+            if info.get("hard_threshold"):
+                reason += " | Hard threshold also triggered"
+
+            new_alert = {
+                "wallet_address": wallet,
+                "risk_score": risk_score_100,
+                "severity": severity,
+                "message": reason,
+                "recommended_action": "Review activity or Revoke Access",
+            }
+
+            supabase.table("alerts").insert(new_alert).execute()
+            trigger_webhook_alert(wallet, risk_score_100, reason)
 
 
 @app.post("/log")
