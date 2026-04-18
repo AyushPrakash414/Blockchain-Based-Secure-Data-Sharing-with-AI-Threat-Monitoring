@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Activity, AlertTriangle, Brain, Loader2, Shield, ShieldAlert } from 'lucide-react';
@@ -33,7 +33,12 @@ export default function MonitorPage() {
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
   const [simulating, setSimulating] = useState(false);
+  const simulatingRef = useRef(false);
   const [filter, setFilter] = useState('all');
+
+  useEffect(() => {
+    simulatingRef.current = simulating;
+  }, [simulating]);
 
   useEffect(() => {
     let active = true;
@@ -57,10 +62,17 @@ export default function MonitorPage() {
 
     const channel = subscribeToAlerts(newAlert => {
       setAlerts(current => mergeAlerts(current, [newAlert]));
+      
+      // Check if this alert was triggered during a simulation run
+      const isSim = simulatingRef.current || newAlert.is_simulation;
+      
       addNotification({
-        title: 'New Threat Detected',
-        message: `High risk activity detected on wallet ${shortAddress(newAlert.wallet_address, 6, 4)}`,
+        title: isSim ? 'Security Simulation' : 'Real-Time Threat',
+        message: isSim 
+          ? `Simulated ${newAlert.severity} threat detected for triage testing.`
+          : `High risk activity detected on wallet ${shortAddress(newAlert.wallet_address, 6, 4)}`,
         severity: String(newAlert.severity).toLowerCase(),
+        type: isSim ? 'simulation' : 'threat'
       });
     });
 
