@@ -40,6 +40,17 @@ export default function MonitorPage() {
     simulatingRef.current = simulating;
   }, [simulating]);
 
+  const severityCounts = useMemo(() => ({
+    critical: alerts.filter(alert => String(alert.severity).toLowerCase() === 'critical').length,
+    high: alerts.filter(alert => String(alert.severity).toLowerCase() === 'high').length,
+    medium: alerts.filter(alert => String(alert.severity).toLowerCase() === 'medium').length,
+    low: alerts.filter(alert => String(alert.severity).toLowerCase() === 'low').length,
+  }), [alerts]);
+
+  const filteredAlerts = useMemo(() => {
+    if (filter === 'all') return alerts;
+    return alerts.filter(alert => String(alert.severity).toLowerCase() === filter);
+  }, [alerts, filter]);
   useEffect(() => {
     let active = true;
 
@@ -82,27 +93,16 @@ export default function MonitorPage() {
     };
   }, [addNotification]);
   
-  const severityCounts = useMemo(() => ({
-    critical: alerts.filter(alert => String(alert.severity).toLowerCase() === 'critical').length,
-    high: alerts.filter(alert => String(alert.severity).toLowerCase() === 'high').length,
-    medium: alerts.filter(alert => String(alert.severity).toLowerCase() === 'medium').length,
-    low: alerts.filter(alert => String(alert.severity).toLowerCase() === 'low').length,
-  }), [alerts]);
-
-  const filteredAlerts = useMemo(() => {
-    if (filter === 'all') return alerts;
-    return alerts.filter(alert => String(alert.severity).toLowerCase() === filter);
-  }, [alerts, filter]);
-
   const chartData = useMemo(() => {
-    return filteredAlerts
-      .map(alert => ({
-        createdAt: getDateValue(alert.created_at),
-        risk: Number(alert.risk_score || 0),
-        wallet: shortAddress(alert.wallet_address, 6, 4),
-      }))
-      .filter(point => !Number.isNaN(point.createdAt))
-      .sort((left, right) => left.createdAt - right.createdAt);
+    // Sort by time first to ensure sequence is correct
+    const sorted = [...filteredAlerts].sort((left, right) => getDateValue(left.created_at) - getDateValue(right.created_at));
+    
+    return sorted.map((alert, index) => ({
+      count: index + 1,
+      risk: Number(alert.risk_score || 0),
+      wallet: shortAddress(alert.wallet_address, 6, 4),
+      time: alert.created_at
+    }));
   }, [filteredAlerts]);
   
   const runAnalysis = async () => {
@@ -168,69 +168,76 @@ export default function MonitorPage() {
         ))}
       </div>
 
-      <div className="grid gap-6">
-        <GlassCard title="Risk Trend" eyebrow="Analytics">
-          <div className="h-72 w-full pt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorRisk" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#C05C39" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#C05C39" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis
-                  type="number"
-                  dataKey="createdAt"
-                  scale="time"
-                  domain={['dataMin', 'dataMax']}
-                  stroke="#8E9B84"
-                  fontSize={11}
-                  tickMargin={8}
-                  minTickGap={30}
-                  tickFormatter={value => formatChartTime(value)}
-                />
-                <YAxis stroke="#8E9B84" fontSize={11} tickFormatter={value => `${value}%`} />
-                <RechartsTooltip
-                  labelFormatter={value => formatDateTime(value)}
-                  formatter={(value, _name, payload) => [`${value}%`, `Risk ${payload?.payload?.wallet ? `(${payload.payload.wallet})` : ''}`.trim()]}
-                  contentStyle={{ backgroundColor: '#FCF9F3', border: '1px solid #DCC1B8', borderRadius: '8px' }}
-                  itemStyle={{ color: '#1C1C18' }}
-                />
-                <Area type="monotone" dataKey="risk" stroke="#C05C39" strokeWidth={2} fillOpacity={1} fill="url(#colorRisk)" activeDot={{ r: 6, fill: '#C05C39', stroke: '#FCF9F3', strokeWidth: 2 }} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </GlassCard>
+      <div className="grid gap-6 xl:grid-cols-12 xl:items-start">
+        {/* Graph Section */}
+        <div className="xl:col-span-8">
+          <GlassCard title="Risk Progression" eyebrow="Analytics">
+            <div className="h-[432px] w-full pt-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorRisk" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#C05C39" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="#C05C39" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis
+                    dataKey="count"
+                    stroke="#8E9B84"
+                    fontSize={11}
+                    tickMargin={8}
+                    label={{ value: 'Risk Event Count', position: 'insideBottom', offset: -5, fontSize: 10, fill: '#8E9B84' }}
+                  />
+                  <YAxis stroke="#8E9B84" fontSize={11} tickFormatter={value => `${value}%`} />
+                  <RechartsTooltip
+                    labelFormatter={value => `Risk Event #${value}`}
+                    formatter={(value, _name, payload) => [
+                      `${value}%`, 
+                      `Score ${payload?.payload?.wallet ? `(${payload.payload.wallet})` : ''}`.trim()
+                    ]}
+                    contentStyle={{ backgroundColor: '#FCF9F3', border: '1px solid #DCC1B8', borderRadius: '8px' }}
+                    itemStyle={{ color: '#1C1C18' }}
+                  />
+                  <Area type="monotone" dataKey="risk" stroke="#C05C39" strokeWidth={2} fillOpacity={1} fill="url(#colorRisk)" activeDot={{ r: 6, fill: '#C05C39', stroke: '#FCF9F3', strokeWidth: 2 }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </GlassCard>
+        </div>
 
-        <div className="space-y-4">
+        {/* Alerts Section (Side) */}
+        <div className="space-y-4 xl:col-span-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+          <p className="text-[11px] uppercase tracking-[0.28em] text-base-soft px-1 mb-3">Live stream</p>
           {loading ? (
-            <div className="surface rounded-[var(--radius-xl)] p-10 text-center text-base-muted">
+            <div className="surface rounded-[var(--radius-xl)] p-10 text-center text-base-muted border border-base">
               <Loader2 className="mx-auto mb-3 h-5 w-5 animate-spin" />
-              Loading threat telemetry...
+              Syncing telemetry...
             </div>
           ) : filteredAlerts.length === 0 ? (
-            <EmptyState icon={ShieldAlert} title="No alerts in this scope" description="The selected filter does not currently match any alerts." />
+            <EmptyState icon={ShieldAlert} title="No alerts" description="All indicators summary within safe bounds." />
           ) : (
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <div className="flex flex-col gap-3">
               {filteredAlerts.map((alert, index) => {
                 const severity = String(alert.severity || 'medium').toLowerCase();
                 const score = Number(alert.risk_score || 0);
 
                 return (
-                  <div key={alert.id || index} className="rounded-[24px] border border-base bg-[var(--bg-inset)] p-5 transition-theme hover:-translate-y-0.5">
-                    <div className="flex items-center justify-between">
+                  <div key={alert.id || index} className="rounded-[20px] border border-base bg-[var(--bg-inset)] p-4 transition-theme hover:bg-white/50">
+                    <div className="flex items-center justify-between gap-2">
                       <StatusBadge tone={severity === 'critical' ? 'danger' : severity === 'high' ? 'warning' : severity === 'low' ? 'success' : 'info'}>{severity}</StatusBadge>
-                      <span className="mono text-sm text-base-muted">{shortAddress(alert.wallet_address, 8, 6)}</span>
+                      <span className="mono text-[10px] text-base-muted">{shortAddress(alert.wallet_address, 4, 3)}</span>
                     </div>
-                    <div className="mt-4 flex items-center justify-between text-xs uppercase tracking-[0.22em] text-base-soft">
-                      <span>Risk score</span>
+                    <div className="mt-3 flex items-center justify-between text-[10px] uppercase tracking-[0.18em] text-base-soft font-bold">
+                      <span>Anomalous load</span>
                       <span>{score}%</span>
                     </div>
-                    <div className="mt-2 h-1 overflow-hidden rounded-full bg-[rgba(148,163,184,0.14)]">
+                    <div className="mt-2 h-1 overflow-hidden rounded-full bg-base/10">
                       <div className={`h-full rounded-full ${score > 80 ? 'bg-[var(--danger)]' : score > 50 ? 'bg-[var(--warning)]' : 'bg-[var(--accent)]'}`} style={{ width: `${Math.min(score, 100)}%` }} />
                     </div>
-                    <p className="mt-4 text-xs text-base-soft">{formatDateTime(alert.created_at)}</p>
+                    <div className="mt-3 flex items-center justify-between">
+                       <p className="text-[10px] text-base-faint">{formatDateTime(alert.created_at)}</p>
+                       <span className="text-[9px] font-bold text-[var(--accent)] opacity-50">EVENT #{filteredAlerts.length - index}</span>
+                    </div>
                   </div>
                 );
               })}

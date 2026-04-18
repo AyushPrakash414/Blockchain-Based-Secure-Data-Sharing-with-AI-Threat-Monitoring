@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { NavLink } from 'react-router-dom';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home } from 'lucide-react';
 
 import { roleNavigation, roleOptions } from '../data/product.js';
 import { shortAddress } from '../lib/format.js';
@@ -45,6 +45,16 @@ export default function Sidebar({ collapsed, onToggle, role, account }) {
         </div>
 
         <nav className="flex-1 space-y-2 overflow-y-auto p-3">
+          <NavLink
+            to="/"
+            className={({ isActive }) => `group relative flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-theme text-base-muted hover:bg-[rgba(148,163,184,0.08)] hover:text-base-strong ${collapsed ? 'justify-center px-2' : ''}`}
+          >
+            <Home className="relative z-10 h-5 w-5 flex-shrink-0" />
+            {!collapsed ? <span className="relative z-10">Home</span> : null}
+          </NavLink>
+
+          <div className="h-px bg-base mx-4 my-2 opacity-50" />
+
           {items.map(item => (
             <NavLink
               key={item.to}
