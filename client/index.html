@@ -9,6 +9,50 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700&display=swap" rel="stylesheet">
+    <script>
+      (function () {
+        var reloadKey = 'datafort-clear-sw-once';
+
+        function clearCachesAndReload() {
+          var cachePromise = window.caches && window.caches.keys
+            ? window.caches.keys().then(function (keys) {
+                return Promise.all(keys.map(function (key) {
+                  return window.caches.delete(key);
+                }));
+              })
+            : Promise.resolve();
+
+          cachePromise.finally(function () {
+            sessionStorage.setItem(reloadKey, '1');
+            window.location.reload();
+          });
+        }
+
+        if (!('serviceWorker' in navigator)) {
+          return;
+        }
+
+        navigator.serviceWorker.getRegistrations().then(function (registrations) {
+          if (!registrations.length) {
+            return;
+          }
+
+          Promise.all(registrations.map(function (registration) {
+            return registration.unregister();
+          })).then(function () {
+            if (!sessionStorage.getItem(reloadKey)) {
+              clearCachesAndReload();
+            }
+          });
+        }).catch(function () {
+          sessionStorage.removeItem(reloadKey);
+        });
+
+        if (sessionStorage.getItem(reloadKey)) {
+          sessionStorage.removeItem(reloadKey);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
