@@ -21,10 +21,32 @@ function getEthereum() {
   return window.ethereum ?? null;
 }
 
+async function ensureSepolia(ethereum) {
+  try {
+    await ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: SEPOLIA_CHAIN_ID }],
+    });
+  } catch (switchError) {
+    if (switchError?.code === 4902) {
+      await ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [SEPOLIA_CONFIG],
+      });
+      return;
+    }
+
+    if (switchError?.code !== 4001) {
+      throw switchError;
+    }
+  }
+}
+
 export function WalletProvider({ children }) {
   const [account, setAccount] = useState('');
   const [provider, setProvider] = useState(null);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isSwitchingAccount, setIsSwitchingAccount] = useState(false);
 
   const syncWallet = async () => {
     const ethereum = getEthereum();
@@ -50,23 +72,27 @@ export function WalletProvider({ children }) {
     const ethereum = getEthereum();
     if (!ethereum) return undefined;
 
-    const handleAccountsChanged = accounts => {
-      setAccount(accounts[0] ?? '');
-      setProvider(accounts.length ? new ethers.providers.Web3Provider(ethereum) : null);
+    const handleAccountsChanged = (accounts) => {
+      const nextAccount = accounts[0] ?? '';
+      setAccount(nextAccount);
+      if (ethereum && nextAccount) {
+        setProvider(new ethers.providers.Web3Provider(ethereum));
+      } else {
+        setProvider(null);
+      }
     };
 
     const handleChainChanged = () => {
-      syncWallet().catch(error => {
-        console.error('Wallet chain refresh failed', error);
-      });
+      // Refresh the page on chain change as recommended by MetaMask
+      window.location.reload();
     };
 
-    ethereum.on?.('accountsChanged', handleAccountsChanged);
-    ethereum.on?.('chainChanged', handleChainChanged);
+    ethereum.on('accountsChanged', handleAccountsChanged);
+    ethereum.on('chainChanged', handleChainChanged);
 
     return () => {
-      ethereum.removeListener?.('accountsChanged', handleAccountsChanged);
-      ethereum.removeListener?.('chainChanged', handleChainChanged);
+      ethereum.removeListener('accountsChanged', handleAccountsChanged);
+      ethereum.removeListener('chainChanged', handleChainChanged);
     };
   }, []);
 
@@ -79,21 +105,7 @@ export function WalletProvider({ children }) {
     setIsConnecting(true);
 
     try {
-      try {
-        await ethereum.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: SEPOLIA_CHAIN_ID }],
-        });
-      } catch (switchError) {
-        if (switchError?.code === 4902) {
-          await ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [SEPOLIA_CONFIG],
-          });
-        } else if (switchError?.code !== 4001) {
-          throw switchError;
-        }
-      }
+      await ensureSepolia(ethereum);
 
       const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
       const web3Provider = new ethers.providers.Web3Provider(ethereum);
@@ -103,6 +115,43 @@ export function WalletProvider({ children }) {
       return accounts?.[0] ?? '';
     } finally {
       setIsConnecting(false);
+    }
+  };
+
+  const switchAccount = async () => {
+    const ethereum = getEthereum();
+    if (!ethereum) {
+      throw new Error('MetaMask is not installed.');
+    }
+
+    setIsSwitchingAccount(true);
+
+    try {
+      try {
+        await ethereum.request({
+          method: 'wallet_requestPermissions',
+          params: [{ eth_accounts: {} }],
+        });
+      } catch (permissionError) {
+        if (permissionError?.code === 4001) {
+          throw permissionError;
+        }
+
+        if (permissionError?.code !== -32601) {
+          throw permissionError;
+        }
+      }
+
+      await ensureSepolia(ethereum);
+
+      const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+      const web3Provider = new ethers.providers.Web3Provider(ethereum);
+
+      setProvider(web3Provider);
+      setAccount(accounts?.[0] ?? '');
+      return accounts?.[0] ?? '';
+    } finally {
+      setIsSwitchingAccount(false);
     }
   };
 
@@ -116,10 +165,12 @@ export function WalletProvider({ children }) {
     provider,
     isConnected: Boolean(account),
     isConnecting,
+    isSwitchingAccount,
     connectWallet,
+    switchAccount,
     disconnectWallet,
     hasWallet: Boolean(getEthereum()),
-  }), [account, provider, isConnecting]);
+  }), [account, provider, isConnecting, isSwitchingAccount]);
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
 }

@@ -3,8 +3,8 @@ import { motion } from 'framer-motion';
 const toneStyles = {
   accent: 'accent-bg text-[var(--accent)] border border-base',
   success: 'bg-[var(--bg-success)] text-[var(--success)] border border-[var(--bg-success)]',
-  warning: 'warning-bg text-[var(--warning)] border border-[var(--bg-warning)]',
-  danger: 'danger-bg text-[var(--danger)] border border-[var(--bg-danger)]',
+  warning: 'bg-[var(--bg-warning)] text-[var(--warning)] border border-[var(--bg-warning)]',
+  danger: 'bg-[var(--bg-danger)] text-[var(--danger)] border border-[var(--bg-danger)]',
   info: 'bg-[var(--bg-success)] text-[var(--info)] border border-[var(--bg-success)]',
   neutral: 'surface-inset text-base-muted border-base',
 };
@@ -28,12 +28,12 @@ export function GlassCard({ className = '', children, title, eyebrow, action, fo
   return (
     <section className={`surface rounded-[var(--radius-xl)] p-5 md:p-6 transition-theme ${className}`}>
       {(title || eyebrow || action) && (
-        <div className="mb-5 flex items-start justify-between gap-4">
+        <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div className="space-y-1">
             {eyebrow ? <p className="text-[11px] uppercase tracking-[0.3em] text-base-soft">{eyebrow}</p> : null}
             {title ? <h3 className="text-xl md:text-2xl font-semibold leading-tight">{title}</h3> : null}
           </div>
-          {action ? <div>{action}</div> : null}
+          {action ? <div className="md:shrink-0">{action}</div> : null}
         </div>
       )}
       {children}

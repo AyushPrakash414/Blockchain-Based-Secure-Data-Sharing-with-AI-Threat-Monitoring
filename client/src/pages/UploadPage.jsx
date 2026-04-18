@@ -217,7 +217,7 @@ export default function UploadPage() {
         <GlassCard
           eyebrow="Secure ingest"
           title="Upload to DataFort AI"
-          action={<StatusBadge tone={account ? 'success' : 'warning'}>{account ? shortAddress(account, 8, 6) : 'wallet required'}</StatusBadge>}
+          action={<StatusBadge tone={account ? 'success' : 'warning'}>{account ? shortAddress(account, 8, 6) : 'Wallet required'}</StatusBadge>}
         >
           <div className="space-y-5">
             <ProgressBar label="Pipeline progress" value={stepProgress} tone={error ? 'danger' : step === 3 ? 'success' : 'accent'} />
@@ -239,7 +239,7 @@ export default function UploadPage() {
 
             {awaitingWallet ? (
               <div className="rounded-xl border border-warning bg-warning p-5">
-                <div className="flex gap-4">
+                <div className="flex flex-col gap-4 sm:flex-row">
                   <Smartphone className="h-6 w-6 animate-pulse text-warning" />
                   <div>
                     <p className="font-semibold font-serif text-base-strong">Confirm in MetaMask</p>
@@ -271,7 +271,7 @@ export default function UploadPage() {
                       <p className="mt-1 text-xs font-mono uppercase tracking-widest text-base-soft">{formatBytes(file.size)}</p>
                     </div>
                     {error ? null : (
-                      <div className="flex gap-3 pt-4">
+                      <div className="flex flex-wrap justify-center gap-3 pt-4">
                         <button type="button" onClick={(e) => { e.stopPropagation(); upload(); }} disabled={uploading} className="btn-primary px-6 py-2.5 text-sm font-bold transition-theme disabled:cursor-not-allowed disabled:opacity-50">
                           {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
                           {uploading ? 'Processing...' : 'Upload File'}
@@ -311,7 +311,7 @@ export default function UploadPage() {
             {result ? (
               <div className="space-y-6">
                 <div className="rounded-xl border border-accent bg-accent-strong p-6">
-                  <div className="flex items-center gap-3 border-b border-border pb-4 mb-4">
+                  <div className="mb-4 flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center">
                     <CheckCircle2 className="h-5 w-5 text-accent" />
                     <p className="font-serif text-lg font-medium text-base-strong">Upload confirmed on chain</p>
                   </div>
@@ -339,7 +339,7 @@ export default function UploadPage() {
                       </div>
                     ))}
                   </div>
-                  <div className="mt-6 flex flex-wrap justify-end gap-3">
+                  <div className="mt-6 flex flex-wrap justify-center gap-3 sm:justify-end">
                     <button type="button" onClick={reset} className="btn-secondary border-terracotta px-5 py-2.5 text-sm font-bold text-terracotta transition-theme">
                       Upload another file
                     </button>
@@ -360,7 +360,7 @@ export default function UploadPage() {
                     </div>
                   </div>
                   
-                  <div className="mt-5 flex gap-3">
+                  <div className="mt-5 flex flex-col gap-3 sm:flex-row">
                     <input
                       type="text"
                       placeholder="Enter Ethereum Address (0x...)"
@@ -372,7 +372,7 @@ export default function UploadPage() {
                       type="button"
                       onClick={shareAccess}
                       disabled={!shareAddress || sharing || !account}
-                      className="btn-primary w-[130px] px-4 py-2.5 text-sm font-bold transition-theme disabled:cursor-not-allowed disabled:opacity-50"
+                      className="btn-primary w-full px-4 py-2.5 text-sm font-bold transition-theme disabled:cursor-not-allowed disabled:opacity-50 sm:w-[130px]"
                     >
                       {sharing ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Grant Access'}
                     </button>

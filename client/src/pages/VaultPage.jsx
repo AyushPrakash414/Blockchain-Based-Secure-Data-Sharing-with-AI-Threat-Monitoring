@@ -67,8 +67,8 @@ export default function VaultPage() {
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       <GlassCard
         eyebrow="File storage"
-        title="My Files"
-        action={<StatusBadge tone={account ? 'success' : 'warning'}>{account ? shortAddress(account, 8, 6) : 'wallet required'}</StatusBadge>}
+        title="Vault Files"
+        action={<StatusBadge tone={account ? 'success' : 'warning'}>{account ? shortAddress(account, 8, 6) : 'Wallet required'}</StatusBadge>}
       >
         <div className="flex flex-wrap gap-3">
           {[
@@ -83,10 +83,17 @@ export default function VaultPage() {
                 setFiles([]);
                 setError('');
               }}
-              className={`inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium transition-theme ${tab === item.key ? 'btn-tab-active' : 'btn-secondary'}`}
+              className={`relative inline-flex items-center gap-2 overflow-hidden rounded-[var(--radius-md)] px-5 py-2.5 text-sm font-medium transition-theme ${tab === item.key ? 'text-[var(--bg)]' : 'btn-secondary'}`}
             >
-              <item.icon className="h-4 w-4" />
-              {item.label}
+              {tab === item.key ? (
+                <motion.span
+                  layoutId="vault-tab"
+                  className="absolute inset-0 bg-[var(--accent)]"
+                  transition={{ type: 'spring', stiffness: 380, damping: 34 }}
+                />
+              ) : null}
+              <item.icon className="relative z-10 h-4 w-4" />
+              <span className="relative z-10">{item.label}</span>
             </button>
           ))}
         </div>
@@ -125,7 +132,7 @@ export default function VaultPage() {
         <EmptyState
           icon={FileText}
           title={`No files loaded in ${sourceLabel.toLowerCase()}`}
-          description={tab === 'mine' ? 'Upload a file to populate your secure storage.' : 'Enter a wallet address to inspect the files that were shared with you.'}
+          description={tab === 'mine' ? 'Upload a file to populate your secure workspace.' : 'Enter a wallet address to inspect the files that were shared with you.'}
         />
       ) : null}
 

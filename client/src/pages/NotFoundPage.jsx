@@ -9,7 +9,7 @@ export default function NotFoundPage() {
           <Shield className="h-6 w-6" />
         </div>
         <h1 className="text-3xl font-semibold">Page not found</h1>
-        <p className="mt-3 text-base-muted">The route you requested does not exist in the rebuilt Sentinel Grid experience.</p>
+        <p className="mt-3 text-base-muted">The route you requested does not exist in the DataFort AI workspace.</p>
         <Link to="/" className="mt-6 inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-5 py-3 text-sm font-semibold text-slate-950 transition-theme hover:brightness-110">
           <ArrowLeft className="h-4 w-4" />
           Return home
