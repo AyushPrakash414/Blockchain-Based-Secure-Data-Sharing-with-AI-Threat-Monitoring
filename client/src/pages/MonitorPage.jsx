@@ -105,31 +105,16 @@ export default function MonitorPage() {
     }));
   }, [filteredAlerts]);
   
-  const runAnalysis = async () => {
-    setRunning(true);
-    setAlerts([]); // Clear old notifications immediately as requested (RESET)
-    try {
-      const response = await fetch(ANALYZE_URL, { method: 'POST' });
-      const data = await response.json();
-      if (Array.isArray(data)) {
-        setAlerts(data); // Show only the NEW results from this analysis
-      }
-    } catch (error) {
-      console.error('Threat analysis failed', error);
-    } finally {
-      setRunning(false);
-    }
-  };
-
   const triggerSimulation = async () => {
     setSimulating(true);
-    setAlerts([]); // Clear old notifications immediately as requested (RESET)
+    setAlerts([]); // Clear UI immediately for fresh demo
     try {
       await fetch(TRIGGER_DEMO_URL, { method: 'POST' });
     } catch (error) {
       console.error('Simulation trigger failed', error);
     } finally {
-      setTimeout(() => setSimulating(false), 2000);
+      // Keep simulating true for slightly longer to let the background task start
+      setTimeout(() => setSimulating(false), 3000);
     }
   };
 
@@ -145,16 +130,12 @@ export default function MonitorPage() {
         <div className="max-w-3xl space-y-2 text-center lg:text-left">
           <p className="text-[11px] uppercase tracking-[0.28em] text-base-soft">Threat monitoring</p>
           <h2 className="text-3xl font-serif text-base-strong md:text-4xl">AI anomaly scoring and triage</h2>
-          <p className="font-sans leading-7 text-base-muted">The monitoring surface keeps the highest-risk wallets visible, with clear severity labels and a fast path to a fresh analysis run.</p>
+          <p className="font-sans leading-7 text-base-muted">The monitoring surface keeps the highest-risk wallets visible, with clear severity labels and a fast path to triggering a fresh security simulation.</p>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-3 lg:justify-end">
-          <button type="button" onClick={triggerSimulation} disabled={simulating} className="inline-flex items-center gap-2 rounded-md border border-danger/30 bg-transparent px-6 py-2.5 text-sm font-bold text-danger shadow-sm transition-theme hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-50">
-            {simulating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className="h-4 w-4" />}
-            {simulating ? 'Injecting...' : 'Run Simulation'}
-          </button>
-          <button type="button" onClick={runAnalysis} disabled={running} className="btn-primary px-6 py-2.5 text-sm font-bold transition-theme disabled:cursor-not-allowed disabled:opacity-50">
-            {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
-            {running ? 'Analyzing...' : 'Run Analysis'}
+          <button type="button" onClick={triggerSimulation} disabled={simulating} className="btn-primary flex items-center gap-3 px-8 py-3 text-sm font-bold shadow-lg transition-all hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50">
+            {simulating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Activity className="h-5 w-5" />}
+            {simulating ? 'Injecting Attack...' : 'Run Security Simulation'}
           </button>
         </div>
       </div>

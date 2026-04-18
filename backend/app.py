@@ -129,8 +129,8 @@ def extract_features(logs: list[dict]) -> dict[str, dict]:
         
     return features
 
-def run_ai_pipeline():
-    print("Running AI Pipeline...")
+def run_ai_pipeline(skip_filter: bool = False):
+    print(f"Running AI Pipeline (skip_filter={skip_filter})...")
     # 1. Fetch recent logs from Supabase (e.g. last 1000 to keep it relevant)
     response = supabase.table("access_logs").select("*").order("timestamp", desc=True).limit(1000).execute()
     logs = response.data
@@ -206,9 +206,13 @@ def run_ai_pipeline():
             risk_score_100 = round(score * 100, 2)
             
             # Check if we already alerted recently (in last 1 hour) for this wallet
-            recent = supabase.table("alerts").select("id").eq("wallet_address", wallet).gte("risk_score", 50.0).order("created_at", desc=True).limit(1).execute()
+            if skip_filter:
+                recent_data = [] # Bypass filter for simulations
+            else:
+                recent = supabase.table("alerts").select("id").eq("wallet_address", wallet).gte("risk_score", 50.0).order("created_at", desc=True).limit(1).execute()
+                recent_data = recent.data
             
-            if not recent.data:
+            if not recent_data:
                 severity = "critical" if risk_score_100 > 80 else "high"
                 
                 new_alert = {
@@ -273,37 +277,47 @@ import asyncio
 
 async def generate_synthetic_threats():
     import random
-    wallets = ["0xBadActor", "0xScraperBot", "0xMaliciousNode"]
-    # Spam 20 rapid views across different wallets to trigger the ML Model Isolation forest
+    # Clean up previous simulation data to ensure a "fresh" real-time feel
+    test_wallets = ["0xBadActor", "0xScraperBot", "0xMaliciousNode", "0xBruteForceHacker", "0xBotRapidTest", "0xHackerFailTest"]
+    try:
+        supabase.table("alerts").delete().in_("wallet_address", test_wallets).execute()
+        supabase.table("access_logs").delete().in_("wallet_address", test_wallets).execute()
+    except Exception as e:
+        print(f"Cleanup error (ignoring): {e}")
+
+    # 1. Simulate Rapid Actions (logic from simulate_attack.py & existing)
+    print("🚨 Simulating Rapid Actions (Bot Behavior)...")
     for _ in range(20):
-        w = random.choice(wallets)
+        w = random.choice(test_wallets[:3])
         payload = {
             "wallet_address": w,
             "action": "FILE_VIEW_CLICKED",
             "result": "info",
             "timestamp": utc_now_iso(),
-            "metadata": {"ip": f"192.168.1.{random.randint(1,100)}"}
+            "metadata": {"ip": f"192.168.1.{random.randint(1,100)}", "simulated": True}
         }
         supabase.table("access_logs").insert(payload).execute()
         await asyncio.sleep(0.05)
     
-    # Run the pipeline to catch this
-    run_ai_pipeline()
-    await asyncio.sleep(2)
+    # Run the pipeline to catch this (bypassing filter)
+    run_ai_pipeline(skip_filter=True)
+    await asyncio.sleep(1.5)
     
-    # Spam 15 Critical Errors (Hard threshold trigger)
-    for _ in range(15):
+    # 2. Simulate Multiple Failures (logic from simulate_attack.py & existing)
+    print("🚨 Simulating Multiple Failures (Brute Force)...")
+    for _ in range(12):
         payload = {
             "wallet_address": "0xBruteForceHacker",
             "action": "ACCESS_DENIED",
             "result": "error",
             "timestamp": utc_now_iso(),
-            "metadata": {}
+            "metadata": {"simulated": True}
         }
         supabase.table("access_logs").insert(payload).execute()
         await asyncio.sleep(0.02)
         
-    run_ai_pipeline()
+    run_ai_pipeline(skip_filter=True)
+    print("✅ Synthetic threat simulation complete.")
 
 @app.post("/trigger-demo")
 async def trigger_demo(background_tasks: BackgroundTasks):
