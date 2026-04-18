@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Bell, Copy, RefreshCcw, Wallet } from 'lucide-react';
+import { Bell, Copy, Wallet } from 'lucide-react';
 
 import { useWallet } from '../context/WalletContext.jsx';
 import { useNotifications } from '../context/NotificationContext.jsx';
@@ -9,7 +9,7 @@ import { shortAddress } from '../lib/format.js';
 import { StatusBadge } from '../ui/Primitives.jsx';
 
 export default function Topbar({ account, role, setRole, isConnected }) {
-  const { connectWallet, switchAccount, isConnecting, isSwitchingAccount, hasWallet } = useWallet();
+  const { connectWallet, isConnecting, hasWallet } = useWallet();
   const { unreadCount, markAllAsRead } = useNotifications();
   const [copied, setCopied] = useState(false);
 
@@ -74,15 +74,6 @@ export default function Topbar({ account, role, setRole, isConnected }) {
                 <Wallet className="h-4 w-4 text-[var(--accent)]" />
                 <span className="mono">{shortAddress(account)}</span>
                 <Copy className={`h-4 w-4 ${copied ? 'text-[var(--accent)]' : 'text-base-soft'}`} />
-              </button>
-              <button
-                type="button"
-                onClick={() => switchAccount().catch(error => console.error('Account switch failed', error))}
-                className="btn-secondary rounded-full px-4 py-2 text-sm font-semibold transition-theme disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={isSwitchingAccount || isConnecting || !hasWallet}
-              >
-                <RefreshCcw className={`h-4 w-4 ${isSwitchingAccount ? 'animate-spin' : ''}`} />
-                {isSwitchingAccount ? 'Switching...' : 'Switch Account'}
               </button>
             </div>
           ) : (
